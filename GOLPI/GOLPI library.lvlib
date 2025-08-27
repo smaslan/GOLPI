@@ -63,6 +63,20 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="MAT Save-Read Example.vi" Type="VI" URL="../matfilerw/MAT Save-Read Example.vi"/>
 			<Item Name="MAT Type Representation.ctl" Type="VI" URL="../matfilerw/MAT Type Representation.ctl"/>
 		</Item>
+		<Item Name="Pipe Variable Interface" Type="Folder">
+			<Property Name="NI.SortType" Type="Int">3</Property>
+			<Item Name="Tests" Type="Folder">
+				<Item Name="Pipe Var Intf - Test.vi" Type="VI" URL="../Private/Pipe Variable Interface/Tests/Pipe Var Intf - Test.vi"/>
+				<Item Name="Pipe Var Intf - Test Pipe Create Speed.vi" Type="VI" URL="../Private/Pipe Variable Interface/Tests/Pipe Var Intf - Test Pipe Create Speed.vi"/>
+				<Item Name="Pipe Var Intf - Test Wait For Connect.vi" Type="VI" URL="../Private/Pipe Variable Interface/Tests/Pipe Var Intf - Test Wait For Connect.vi"/>
+				<Item Name="Pipe Var Intf - Test Write Timeout.vi" Type="VI" URL="../Private/Pipe Variable Interface/Tests/Pipe Var Intf - Test Write Timeout.vi"/>
+			</Item>
+			<Item Name="Pipe Var Intf - Data Type.ctl" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Data Type.ctl"/>
+			<Item Name="Pipe Var Intf - Create Pipe.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Create Pipe.vi"/>
+			<Item Name="Pipe Var Intf - Wait ACK.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Wait ACK.vi"/>
+			<Item Name="Pipe Var Intf - Write Dbl Matrix.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Write Dbl Matrix.vi"/>
+			<Item Name="Pipe Var Intf - Write Variable Data.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Write Variable Data.vi"/>
+		</Item>
 		<Item Name="Set Variable - auxiliary" Type="Folder">
 			<Item Name="Set Matrix - file.vi" Type="VI" URL="../Private/Set Variable - auxiliary/Set Matrix - file.vi"/>
 			<Item Name="Set Matrix - stdin.vi" Type="VI" URL="../Private/Set Variable - auxiliary/Set Matrix - stdin.vi"/>
@@ -109,6 +123,29 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Find Octave Executable Older Versions.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable Older Versions.vi"/>
 			<Item Name="Find Octave Executable.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable.vi"/>
 			<Item Name="Find Octave Executable Future Versions.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable Future Versions.vi"/>
+			<Item Name="Get Time Delta.vi" Type="VI" URL="../Private/Utilities/Get Time Delta.vi"/>
+		</Item>
+		<Item Name="WinAPI32" Type="Folder">
+			<Item Name="demo" Type="Folder">
+				<Item Name="test4.vi" Type="VI" URL="../Private/WinAPI32/demo/test4.vi"/>
+			</Item>
+			<Item Name="high level" Type="Folder">
+				<Item Name="wa32 Flush Read.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 Flush Read.vi"/>
+				<Item Name="wa32 Read Till Key.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 Read Till Key.vi"/>
+				<Item Name="wa32 ReadFile with Timeout.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 ReadFile with Timeout.vi"/>
+				<Item Name="wa32 WriteFile with Timeout.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 WriteFile with Timeout.vi"/>
+			</Item>
+			<Item Name="read_me.txt" Type="Document" URL="../Private/WinAPI32/read_me.txt"/>
+			<Item Name="wa32 CloseHandle.vi" Type="VI" URL="../Private/WinAPI32/wa32 CloseHandle.vi"/>
+			<Item Name="wa32 ConnectNamedPipe.vi" Type="VI" URL="../Private/WinAPI32/wa32 ConnectNamedPipe.vi"/>
+			<Item Name="wa32 CreateFileA.vi" Type="VI" URL="../Private/WinAPI32/wa32 CreateFileA.vi"/>
+			<Item Name="wa32 CreateNamedPipeA.vi" Type="VI" URL="../Private/WinAPI32/wa32 CreateNamedPipeA.vi"/>
+			<Item Name="wa32 GetLastError.vi" Type="VI" URL="../Private/WinAPI32/wa32 GetLastError.vi"/>
+			<Item Name="wa32 GetNamedPipeHandleStatus.vi" Type="VI" URL="../Private/WinAPI32/wa32 GetNamedPipeHandleStatus.vi"/>
+			<Item Name="wa32 PeekNamedPipe.vi" Type="VI" URL="../Private/WinAPI32/wa32 PeekNamedPipe.vi"/>
+			<Item Name="wa32 ReadFile.vi" Type="VI" URL="../Private/WinAPI32/wa32 ReadFile.vi"/>
+			<Item Name="wa32 WaitNamedPipeA.vi" Type="VI" URL="../Private/WinAPI32/wa32 WaitNamedPipeA.vi"/>
+			<Item Name="wa32 WriteFile.vi" Type="VI" URL="../Private/WinAPI32/wa32 WriteFile.vi"/>
 		</Item>
 	</Item>
 	<Item Name="Public" Type="Folder">

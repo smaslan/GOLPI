@@ -17,56 +17,117 @@
 #define VTYPE_CDBL 4
 
 
+
+#define DEBUG_PRN 0
+
+
+// --- Timer stuff ---
+typedef struct{
+    LARGE_INTEGER freq;
+  	LARGE_INTEGER t_ref;
+}TTimer;
+
+// init interval timer
+void timer_init(TTimer *timer)
+{
+    QueryPerformanceFrequency(&timer->freq);
+    QueryPerformanceCounter(&timer->t_ref);  
+}
+
+// get elapsed time from timer_init() in seconds
+double timer_get(TTimer *timer)
+{
+    LARGE_INTEGER t_now;
+    QueryPerformanceCounter(&t_now);
+   	double dt = (double)(t_now.QuadPart - timer->t_ref.QuadPart)/(double)timer->freq.QuadPart;
+    return(dt);
+} 
+
+
+	
+
+
 // read file with timeout
 DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
 {    
-    // create ReadFile() async wait event
-    HANDLE hEvent = CreateEvent( 
-        NULL,    // default security attribute 
-        true,    // manual-reset event 
-        false,   // initial state 
-        NULL);   // unnamed event object 
-    if(!hEvent) 
-    {
-        return(0);
-    }    
-    OVERLAPPED overlap;
-    overlap.Offset = 0;
-    overlap.OffsetHigh = 0;
-    overlap.hEvent = hEvent;
+    // get initial timestamp 
+    TTimer timer;
+    timer_init(&timer);
     
-    // start async ReadFile()
-    DWORD read;
-    if(!ReadFile(file, data, size, NULL, &overlap))
-    {                
-        if(GetLastError() != ERROR_IO_PENDING)
+    DWORD read_total = 0;
+    DWORD to_read = size;  
+    do{
+    
+        // create ReadFile() async wait event
+        HANDLE hEvent = CreateEvent( 
+            NULL,    // default security attribute 
+            true,    // manual-reset event 
+            false,   // initial state 
+            NULL);   // unnamed event object 
+        if(!hEvent) 
         {
+            return(0);
+        }    
+        OVERLAPPED overlap;
+        overlap.Offset = 0;
+        overlap.OffsetHigh = 0;
+        overlap.hEvent = hEvent;
+        
+        // start async ReadFile()
+        DWORD read;
+        char *p = (char*)data;
+        if(!ReadFile(file, (void*)&p[read_total], to_read, NULL, &overlap))
+        {                
+            DWORD err = GetLastError();
+            if(err != ERROR_IO_PENDING)
+            {
+                if(DEBUG_PRN)
+                    mexPrintf("read io not pending (err = %d)\n",err);
+                CloseHandle(hEvent);
+                return(0);
+            }
+        }
+        
+        // wait with timeout
+        DWORD err = WaitForSingleObject(hEvent, (DWORD)(timeout*1000.0));
+        if(err == WAIT_TIMEOUT)
+        {
+            // timeout
+            //CancelIoEx(file, &overlap);
+            if(DEBUG_PRN)
+                mexPrintf("read timeout\n");
+            CancelIo(file);
             CloseHandle(hEvent);
             return(0);
         }
-    }
-    
-    // wait with timeout
-    DWORD err = WaitForSingleObject(hEvent, (DWORD)(timeout*1000.0));
-    if(err == WAIT_TIMEOUT)
-    {
-        // timeout
-        CancelIoEx(file, &overlap);
+            
+        // get ReadFile() result
+        DWORD fSuccess = GetOverlappedResult( 
+            file, // handle to pipe 
+            &overlap, // OVERLAPPED structure 
+            &read,            // bytes transferred 
+            false);            // do not wait
+            
+        read_total += read;
+        to_read -= read;
+                
+        if(DEBUG_PRN)
+            mexPrintf("read wait return code %d, read = %d, total read = %d\n",err,read,read_total);        
+        
+        // cleanup    
         CloseHandle(hEvent);
-        return(0);
-    }
+        
+        if(timer_get(&timer) >= timeout)
+        {
+            // total timeout
+            if(DEBUG_PRN)
+                mexPrintf("read timeout\n");
+            return(0);
+        }
     
-    // get ReadFile() result
-    DWORD fSuccess = GetOverlappedResult( 
-        file, // handle to pipe 
-        &overlap, // OVERLAPPED structure 
-        &read,            // bytes transferred 
-        false);            // do not wait 
+    }while(read_total < size);
     
-    // cleanup
-    CloseHandle(hEvent);
-    
-    return(read);
+    return(read_total);
 }
 
 // send ACK or NACK message
@@ -74,7 +135,11 @@ DWORD SendACK(HANDLE file, bool ack)
 {
     char state = (ack)?'a':'n';
     DWORD written;
-    WriteFile(file, &state, 1, &written, NULL);
+    WriteFile(file, &state, 1, &written, NULL);  
+    char res;    
+    ReadFileTimeout(file, &res, 1, 1.0);
+    if(DEBUG_PRN)
+        mexPrintf("ack response %d\n",(int)res);
     return(written);    
 }
 
@@ -136,10 +201,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         NULL // template
         );    
     mxFree(pipe_name);      
-	if (hPipe == INVALID_HANDLE_VALUE)
-	{
+  	if (hPipe == INVALID_HANDLE_VALUE)
+  	{
         mexErrMsgIdAndTxt("GOLPI pipe interface", "Cannot access data pipe.");        
-	}
+  	}
     
     // get data type
     DWORD var_type;
@@ -253,8 +318,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
             
         // fill data
-        memcpy((void*)mxGetPr(array), (void*)data, data_size_bytes);                
-        mxFree(data);
+        if(!is_empty)
+        {
+            memcpy((void*)mxGetPr(array), (void*)data, data_size_bytes);                
+            mxFree(data);
+        }
         
         // return
         plhs[0] = array;            
@@ -263,36 +331,43 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
         // complex double matrix
         
-        // make temp real array
-        mxArray *real_array = mxCreateNumericMatrix(m*n*2,1, mxDOUBLE_CLASS, mxREAL);
-        if(!real_array)
+        if(is_empty)
         {
-            SendACK(hPipe, false);
-            mxFree(data);
-            CloseHandle(hPipe);
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "Output matrix allocation failed.");
+            // empty matrix
+            plhs[0] = mxCreateNumericMatrix(m,n, mxDOUBLE_CLASS, mxCOMPLEX);                          
         }
-        memcpy((void*)mxGetPr(real_array), (void*)data, data_size_bytes);                
-        mxFree(data);
-        
-        // typecast to complex
-        mxArray *cplx_array;
-        mxArray *par_typecast[] = {real_array, mxCreateString("double complex")};
-        mexCallMATLAB(1,&cplx_array, 2,par_typecast, "typecast");
-        mxDestroyArray(real_array);
-        
-        // reshape to desired dims
-        mxArray *size_array = mxCreateNumericMatrix(1,2, mxDOUBLE_CLASS, mxREAL);
-        double *p_size_array = mxGetPr(size_array);
-        p_size_array[0] = (double)m;
-        p_size_array[1] = (double)n;
-        mxArray *par_reshape[] = {cplx_array, size_array};
-        mexCallMATLAB(1,&plhs[0], 2,par_reshape, "reshape");
-        mxDestroyArray(cplx_array);
-        mxDestroyArray(size_array);
+        else
+        {
+            // make temp real array
+            mxArray *real_array = mxCreateNumericMatrix(m*n*2,1, mxDOUBLE_CLASS, mxREAL);
+            if(!real_array)
+            {
+                SendACK(hPipe, false);
+                mxFree(data);
+                CloseHandle(hPipe);
+                mexErrMsgIdAndTxt("GOLPI pipe interface", "Output matrix allocation failed.");
+            }
+            memcpy((void*)mxGetPr(real_array), (void*)data, data_size_bytes);                
+            mxFree(data);
+            
+            // typecast to complex
+            mxArray *cplx_array;
+            mxArray *par_typecast[] = {real_array, mxCreateString("double complex")};
+            mexCallMATLAB(1,&cplx_array, 2,par_typecast, "typecast");
+            mxDestroyArray(real_array);
+            
+            // reshape to desired dims
+            mxArray *size_array = mxCreateNumericMatrix(1,2, mxDOUBLE_CLASS, mxREAL);
+            double *p_size_array = mxGetPr(size_array);
+            p_size_array[0] = (double)m;
+            p_size_array[1] = (double)n;
+            mxArray *par_reshape[] = {cplx_array, size_array};
+            mexCallMATLAB(1,&plhs[0], 2,par_reshape, "reshape");
+            mxDestroyArray(cplx_array);
+            mxDestroyArray(size_array);
+        }
        
-    }
-    
+    }    
     else
     {
         if(data)
@@ -306,7 +381,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     SendACK(hPipe, true);
     
     // close pipe
-    CloseHandle(hPipe);    
+    CloseHandle(hPipe);
+    
+    mexPrintf("GOLPImark\n");    
                 
 }
 
