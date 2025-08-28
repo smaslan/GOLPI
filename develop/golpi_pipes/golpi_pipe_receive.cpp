@@ -4,10 +4,11 @@
 //#include <math.h>
 #include <string.h>
 
+#include <octave/oct.h>
 #include <windows.h>
 
-#include "mex.h"
-#include "matrix.h"
+//#include "mex.h"
+//#include "matrix.h"
 
 
 #define VTYPE_STRING 0
@@ -15,6 +16,8 @@
 #define VTYPE_UINT32 2
 #define VTYPE_DBL 3
 #define VTYPE_CDBL 4
+#define VTYPE_SGL 5
+#define VTYPE_CSGL 6
 
 
 
@@ -145,55 +148,27 @@ DWORD SendACK(HANDLE file, bool ack)
 
 
 /* the gateway function */
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using named pipe")
 {
-
-    /* Check for proper number of input and output arguments */
-    if(nrhs < 1)
-    {
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "At least name of the pipe must be passed.");
-    }
+    // try get pipe name
+    if(args.length() < 1)
+        error("GOLPI pipe interface: At least name of the pipe must be passed.");                
+    if(!args(0).is_string() || args(0).char_matrix_value().rows() != 1)
+        error("GOLPI pipe interface: First argument must be pipe name string.");
+    std::string pipe_name = args(0).char_matrix_value().row_as_string(0);
     
-    // get timeout parameter
+    // try get timeout parameter
     double timeout = 3.0;
-    if(nrhs > 1)
-    {
-        if(!mxIsDouble(prhs[1]) || !mxIsScalar(prhs[1]))
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "Second parameter must be double timeout value [s].");
-        timeout = mxGetScalar(prhs[1]);
-    }
-
-    if(nlhs > 1)
-    {
-        
-    }
-
-    /*if(!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]))
-    {
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Size must be double.");
-    }
-    
-    if(mxGetM(prhs[0]) > 1 || mxGetM(prhs[1]) > 1)
-    {
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Input must be scalars.");
-    }*/
-    
-    
-    
-    // get pipe name
-    if(!mxIsChar(prhs[0]) || (mxGetM(prhs[0]) != 1 ) )
-    {
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "First argument must be pipe name string.");
-    }
-    int buflen = mxGetN(prhs[0])*sizeof(mxChar) + 1;
-    char *pipe_name = (char*)mxMalloc(buflen);
-    int status = mxGetString(prhs[0], pipe_name, buflen);
+    if(args.length() >= 2 && args(1).array_value().numel() == 1)
+        timeout = args(1).array_value().elem(0);
+    else
+        error("GOLPI pipe interface: Second parameter must be double timeout value [s].");
         
     // try open pipe
     HANDLE hPipe;
     hPipe = CreateFileA(
-		pipe_name, 
-		GENERIC_READ | GENERIC_WRITE, // access
+		    pipe_name.c_str(), 
+		    GENERIC_READ | GENERIC_WRITE, // access
         0, // sharing
         NULL, // security
         OPEN_EXISTING, // create mode
@@ -202,9 +177,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         );    
     mxFree(pipe_name);      
   	if (hPipe == INVALID_HANDLE_VALUE)
-  	{
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Cannot access data pipe.");        
-  	}
+        error("GOLPI pipe interface: Cannot access data pipe.");        
     
     // get data type
     DWORD var_type;
@@ -214,7 +187,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Timeout while transfering data type.");
+        error("GOLPI pipe interface: Timeout while transfering data type.");
     }
         
     // get dimensions
@@ -224,14 +197,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Timeout while transfering data size M.");
+        error("GOLPI pipe interface: Timeout while transfering data size M.");
     }    
     read = ReadFileTimeout(hPipe, &n, sizeof(DWORD), timeout);
     if(!read)
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Timeout while transfering data size N.");
+        error("GOLPI pipe interface: Timeout while transfering data size N.");
     }    
     bool is_empty = !m && !n;
     
@@ -244,6 +217,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         case VTYPE_UINT32: element_size = sizeof(DWORD); break;
         case VTYPE_DBL: element_size = sizeof(double); break;
         case VTYPE_CDBL: element_size = 2*sizeof(double); break;
+        case VTYPE_SGL: element_size = sizeof(float); break;
+        case VTYPE_CSGL: element_size = 2*sizeof(float); break;
         default: element_size = 0;
     }
     if(!element_size)
@@ -251,56 +226,48 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // unknown type
         SendACK(hPipe, false);
         CloseHandle(hPipe);
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Unknown variable data type.");
+        error("GOLPI pipe interface: Unknown variable data type.");
     }
     DWORD data_size_bytes = m*n*element_size;
     
     // try read object data
-    char *data = NULL;
+    std:vector<char> data;
     if(!is_empty)
     {
         // allocate memory buffer
-        data = (char*)mxMalloc(data_size_bytes + 1);
-        if(!data)
-        {
-            SendACK(hPipe, false);
-            CloseHandle(hPipe);
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "Memory allocation failed.");
-        }
+        data.reserve(data_size_bytes + 1);        
         // add string termination for strings
         data[data_size_bytes] = '\0';
         
         // try read data
-        read = ReadFileTimeout(hPipe, data, data_size_bytes, timeout);
+        read = ReadFileTimeout(hPipe, data.data(), data_size_bytes, timeout);
         if(!read)
         {
             SendACK(hPipe, false);
-            mxFree(data);
             CloseHandle(hPipe);
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "Timeout while transfering data.");
+            error("GOLPI pipe interface: Timeout while transfering data.");
         }        
     }    
     
+    octave_value_list res;
     if(var_type == VTYPE_STRING)
     {
         // 1D string
         if(is_empty)
         {
             // empty string
-            plhs[0] = mxCreateString("");
+            res = charMatrix("");
         }
         else if(m == 1 && n)
         {    
             // horizontal 1D string            
-            plhs[0] = mxCreateString((char*)data);
-            mxFree(data);        
+            res = charMatrix(data);
         }
         else
         {
-            SendACK(hPipe, false);
-            mxFree(data);
+            SendACK(hPipe, false);            
             CloseHandle(hPipe);
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "String can be only 1D horizontal.");
+            error("GOLPI pipe interface: String can be only 1D horizontal.");
         }           
     }
     else if(var_type == VTYPE_DBL)
