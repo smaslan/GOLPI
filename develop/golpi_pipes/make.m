@@ -4,4 +4,5 @@ clc;
 
 %mex('golpi_pipe_receive.cpp')
 
-mkoctfile golpi_test.cpp
+%mkoctfile golpi_test.cpp
+mkoctfile golpi_pipe_receive.cpp

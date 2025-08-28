@@ -1,26 +1,36 @@
-//#include <iostream>
-//#include <cstdlib>
-//#include <stdio.h>
-//#include <math.h>
-#include <string.h>
-
+//------------------------------------------------------------------------------
+// Script for transfering variables to Octave environment via named pipes.
+//
+// Data format to be send by caller:
+//   DWORD - variable_type_id
+//   DWORD - rows_count
+//   DWORD - columns_count
+//   BYTES - variable data
+// 
+// Usage:
+//   [var_name] = golpi_pipe_receive(pipe_name)
+//   [var_name] = golpi_pipe_receive(pipe_name, timeout)
+//
+// Parameters:
+//   pipe_name: Windows named pipe that has to be created by caller beforehand
+//              e.g. '\\.\Pipe\GOLPI_data_pipe'
+//   timeout: Total data read timeout value [s] (optional)
+// 
+// (c) 2025, Stanislav Maslan, smaslan@cmi.cz
+//------------------------------------------------------------------------------
 #include <octave/oct.h>
 #include <windows.h>
 
-//#include "mex.h"
-//#include "matrix.h"
+// variable type IDs
+#define VTYPE_STRING 0 /* simple string */
+#define VTYPE_INT32 1 /* 32bit signed integer */
+#define VTYPE_UINT32 2 /* 32bit unsigned integer */
+#define VTYPE_DBL 3 /* 64bit float */
+#define VTYPE_CDBL 4 /* 64bit complex float (re,im,re,im, ...) */
+#define VTYPE_SGL 5 /* 32bit float */
+#define VTYPE_CSGL 6 /* 32bit complex float (re,im,re,im, ...) */
 
-
-#define VTYPE_STRING 0
-#define VTYPE_INT32 1
-#define VTYPE_UINT32 2
-#define VTYPE_DBL 3
-#define VTYPE_CDBL 4
-#define VTYPE_SGL 5
-#define VTYPE_CSGL 6
-
-
-
+// enable some debug prints
 #define DEBUG_PRN 0
 
 
@@ -51,8 +61,16 @@ double timer_get(TTimer *timer)
 
 
 // read file with timeout
-DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
+DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, DWORD *read_bytes, double timeout)
 {    
+    // default no data read
+    if(read_bytes)
+        *read_bytes = 0;
+             
+    // empty data?
+    if(!size)
+        return(0);
+    
     // get initial timestamp 
     TTimer timer;
     timer_init(&timer);
@@ -68,9 +86,7 @@ DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
             false,   // initial state 
             NULL);   // unnamed event object 
         if(!hEvent) 
-        {
-            return(0);
-        }    
+            return(1);    
         OVERLAPPED overlap;
         overlap.Offset = 0;
         overlap.OffsetHigh = 0;
@@ -85,9 +101,9 @@ DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
             if(err != ERROR_IO_PENDING)
             {
                 if(DEBUG_PRN)
-                    mexPrintf("read io not pending (err = %d)\n",err);
+                    octave_stdout << "read io not pending (err = " << err << ")\n";
                 CloseHandle(hEvent);
-                return(0);
+                return(1);
             }
         }
         
@@ -98,10 +114,10 @@ DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
             // timeout
             //CancelIoEx(file, &overlap);
             if(DEBUG_PRN)
-                mexPrintf("read timeout\n");
+                octave_stdout << "read timeout\n";
             CancelIo(file);
             CloseHandle(hEvent);
-            return(0);
+            return(1);
         }
             
         // get ReadFile() result
@@ -115,7 +131,7 @@ DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
         to_read -= read;
                 
         if(DEBUG_PRN)
-            mexPrintf("read wait return code %d, read = %d, total read = %d\n",err,read,read_total);        
+            octave_stdout << "read wait return code " << err << ", read = " << read << ", total read = " << read_total << "\n";        
         
         // cleanup    
         CloseHandle(hEvent);
@@ -124,13 +140,17 @@ DWORD ReadFileTimeout(HANDLE file, LPVOID data, DWORD size, double timeout)
         {
             // total timeout
             if(DEBUG_PRN)
-                mexPrintf("read timeout\n");
-            return(0);
+                octave_stdout << "read timeout\n";
+            return(1);
         }
     
     }while(read_total < size);
     
-    return(read_total);
+    // return total read bytes
+    if(read_bytes)
+        *read_bytes = read_total;
+    
+    return(0);
 }
 
 // send ACK or NACK message
@@ -140,9 +160,9 @@ DWORD SendACK(HANDLE file, bool ack)
     DWORD written;
     WriteFile(file, &state, 1, &written, NULL);  
     char res;    
-    ReadFileTimeout(file, &res, 1, 1.0);
+    ReadFileTimeout(file, &res, 1, NULL, 1.0);
     if(DEBUG_PRN)
-        mexPrintf("ack response %d\n",(int)res);
+        octave_stdout << "ack response " << (int)res << "\n";
     return(written);    
 }
 
@@ -150,6 +170,10 @@ DWORD SendACK(HANDLE file, bool ack)
 /* the gateway function */
 DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using named pipe")
 {
+    // outputs
+    if(nargout != 1)
+        error("GOLPI pipe interface: One output argument expected - destination variable.");
+    
     // try get pipe name
     if(args.length() < 1)
         error("GOLPI pipe interface: At least name of the pipe must be passed.");                
@@ -161,7 +185,7 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
     double timeout = 3.0;
     if(args.length() >= 2 && args(1).array_value().numel() == 1)
         timeout = args(1).array_value().elem(0);
-    else
+    else if(args.length() >= 2)
         error("GOLPI pipe interface: Second parameter must be double timeout value [s].");
         
     // try open pipe
@@ -174,16 +198,14 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
         OPEN_EXISTING, // create mode
         FILE_FLAG_OVERLAPPED, // other
         NULL // template
-        );    
-    mxFree(pipe_name);      
+        );         
   	if (hPipe == INVALID_HANDLE_VALUE)
         error("GOLPI pipe interface: Cannot access data pipe.");        
     
     // get data type
     DWORD var_type;
-    DWORD read;
-    read = ReadFileTimeout(hPipe, &var_type, sizeof(DWORD), timeout);
-    if(!read)
+    DWORD read;    
+    if(ReadFileTimeout(hPipe, &var_type, sizeof(DWORD), &read, timeout))
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
@@ -192,15 +214,13 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
         
     // get dimensions
     DWORD m,n;
-    read = ReadFileTimeout(hPipe, &m, sizeof(DWORD), timeout);
-    if(!read)
+    if(ReadFileTimeout(hPipe, &m, sizeof(DWORD), &read, timeout))
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
         error("GOLPI pipe interface: Timeout while transfering data size M.");
     }    
-    read = ReadFileTimeout(hPipe, &n, sizeof(DWORD), timeout);
-    if(!read)
+    if(ReadFileTimeout(hPipe, &n, sizeof(DWORD), &read, timeout))
     {
         SendACK(hPipe, false);
         CloseHandle(hPipe);
@@ -230,24 +250,6 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
     }
     DWORD data_size_bytes = m*n*element_size;
     
-    // try read object data
-    std:vector<char> data;
-    if(!is_empty)
-    {
-        // allocate memory buffer
-        data.reserve(data_size_bytes + 1);        
-        // add string termination for strings
-        data[data_size_bytes] = '\0';
-        
-        // try read data
-        read = ReadFileTimeout(hPipe, data.data(), data_size_bytes, timeout);
-        if(!read)
-        {
-            SendACK(hPipe, false);
-            CloseHandle(hPipe);
-            error("GOLPI pipe interface: Timeout while transfering data.");
-        }        
-    }    
     
     octave_value_list res;
     if(var_type == VTYPE_STRING)
@@ -256,12 +258,21 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
         if(is_empty)
         {
             // empty string
-            res = charMatrix("");
+            res(0) = charMatrix("");
         }
         else if(m == 1 && n)
         {    
-            // horizontal 1D string            
-            res = charMatrix(data);
+            // horizontal 1D string
+            
+            // try read data
+            charMatrix str = charMatrix(m,n);
+            if(ReadFileTimeout(hPipe, (void*)str.fortran_vec(), data_size_bytes, &read, timeout))
+            {
+                SendACK(hPipe, false);
+                CloseHandle(hPipe);
+                error("GOLPI pipe interface: Timeout while transfering data.");
+            }
+            res(0) = str;
         }
         else
         {
@@ -270,78 +281,95 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
             error("GOLPI pipe interface: String can be only 1D horizontal.");
         }           
     }
+    else if(var_type == VTYPE_INT32)
+    {
+        // int32 matrix
+        
+        // try read data
+        int32NDArray array = int32NDArray({m,n});
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
+        {
+            SendACK(hPipe, false);
+            CloseHandle(hPipe);
+            error("GOLPI pipe interface: Timeout while transfering data.");
+        }
+        res(0) = array;
+    }
+    else if(var_type == VTYPE_UINT32)
+    {
+        // uint32 matrix
+        
+        // try read data
+        uint32NDArray array = uint32NDArray({m,n});
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
+        {
+            SendACK(hPipe, false);
+            CloseHandle(hPipe);
+            error("GOLPI pipe interface: Timeout while transfering data.");
+        }
+        res(0) = array;
+    }
     else if(var_type == VTYPE_DBL)
     {
         // double matrix
         
-        // make output matrix
-        mxArray *array = mxCreateNumericMatrix(m,n, mxDOUBLE_CLASS, mxREAL);
-        if(!array)
+        // try read data
+        Matrix array = Matrix(m,n);
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
         {
             SendACK(hPipe, false);
-            mxFree(data);
             CloseHandle(hPipe);
-            mexErrMsgIdAndTxt("GOLPI pipe interface", "Output matrix allocation failed.");
+            error("GOLPI pipe interface: Timeout while transfering data.");
         }
-            
-        // fill data
-        if(!is_empty)
-        {
-            memcpy((void*)mxGetPr(array), (void*)data, data_size_bytes);                
-            mxFree(data);
-        }
+        res(0) = array;
+    }
+    else if(var_type == VTYPE_SGL)
+    {
+        // single matrix
         
-        // return
-        plhs[0] = array;            
+        // try read data
+        FloatMatrix array = FloatMatrix(m,n);
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
+        {
+            SendACK(hPipe, false);
+            CloseHandle(hPipe);
+            error("GOLPI pipe interface: Timeout while transfering data.");
+        }
+        res(0) = array;
     }
     else if(var_type == VTYPE_CDBL)
     {
         // complex double matrix
         
-        if(is_empty)
+        // try read data
+        ComplexMatrix array = ComplexMatrix(m,n);
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
         {
-            // empty matrix
-            plhs[0] = mxCreateNumericMatrix(m,n, mxDOUBLE_CLASS, mxCOMPLEX);                          
+            SendACK(hPipe, false);
+            CloseHandle(hPipe);
+            error("GOLPI pipe interface: Timeout while transfering data.");
         }
-        else
+        res(0) = array;
+    }
+    else if(var_type == VTYPE_CSGL)
+    {
+        // complex single matrix
+        
+        // try read data
+        FloatComplexMatrix array = FloatComplexMatrix(m,n);
+        if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
         {
-            // make temp real array
-            mxArray *real_array = mxCreateNumericMatrix(m*n*2,1, mxDOUBLE_CLASS, mxREAL);
-            if(!real_array)
-            {
-                SendACK(hPipe, false);
-                mxFree(data);
-                CloseHandle(hPipe);
-                mexErrMsgIdAndTxt("GOLPI pipe interface", "Output matrix allocation failed.");
-            }
-            memcpy((void*)mxGetPr(real_array), (void*)data, data_size_bytes);                
-            mxFree(data);
-            
-            // typecast to complex
-            mxArray *cplx_array;
-            mxArray *par_typecast[] = {real_array, mxCreateString("double complex")};
-            mexCallMATLAB(1,&cplx_array, 2,par_typecast, "typecast");
-            mxDestroyArray(real_array);
-            
-            // reshape to desired dims
-            mxArray *size_array = mxCreateNumericMatrix(1,2, mxDOUBLE_CLASS, mxREAL);
-            double *p_size_array = mxGetPr(size_array);
-            p_size_array[0] = (double)m;
-            p_size_array[1] = (double)n;
-            mxArray *par_reshape[] = {cplx_array, size_array};
-            mexCallMATLAB(1,&plhs[0], 2,par_reshape, "reshape");
-            mxDestroyArray(cplx_array);
-            mxDestroyArray(size_array);
+            SendACK(hPipe, false);
+            CloseHandle(hPipe);
+            error("GOLPI pipe interface: Timeout while transfering data.");
         }
-       
-    }    
+        res(0) = array;
+    }        
     else
     {
-        if(data)
-            mxFree(data);
         SendACK(hPipe, false);
         CloseHandle(hPipe);
-        mexErrMsgIdAndTxt("GOLPI pipe interface", "Unknown variable data type.");
+        error("GOLPI pipe interface: Unknown variable data type.");
     }
     
     // send ACK
@@ -350,8 +378,11 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
     // close pipe
     CloseHandle(hPipe);
     
-    mexPrintf("GOLPImark\n");    
-                
+    // console sync mark
+    octave_stdout << "GOLPImark\n";
+    
+    // return stuff
+    return res;    
 }
 
 
