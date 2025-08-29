@@ -124,6 +124,7 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Find Octave Executable.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable.vi"/>
 			<Item Name="Find Octave Executable Future Versions.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable Future Versions.vi"/>
 			<Item Name="Get Time Delta.vi" Type="VI" URL="../Private/Utilities/Get Time Delta.vi"/>
+			<Item Name="Variant To Byte Stream.vi" Type="VI" URL="../Private/Utilities/Variant To Byte Stream.vi"/>
 		</Item>
 		<Item Name="WinAPI32" Type="Folder">
 			<Item Name="demo" Type="Folder">
