@@ -1,0 +1,4 @@
+echo "Compiling golpi_pipe_receive.cpp..."
+mkoctfile golpi_pipe_receive.cpp golpi_pipe.cpp
+echo "Compiling golpi_pipe_send.cpp..."
+mkoctfile golpi_pipe_send.cpp golpi_pipe.cpp

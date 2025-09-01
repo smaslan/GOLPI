@@ -74,8 +74,12 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Pipe Var Intf - Data Type.ctl" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Data Type.ctl"/>
 			<Item Name="Pipe Var Intf - Create Pipe.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Create Pipe.vi"/>
 			<Item Name="Pipe Var Intf - Wait ACK.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Wait ACK.vi"/>
-			<Item Name="Pipe Var Intf - Write Dbl Matrix.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Write Dbl Matrix.vi"/>
+			<Item Name="Pipe Var Intf - Write Variable.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Write Variable.vi"/>
 			<Item Name="Pipe Var Intf - Write Variable Data.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Write Variable Data.vi"/>
+			<Item Name="Pipe Var Intf - Read Variable - Double.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Read Variable - Double.vi"/>
+			<Item Name="Pipe Var Intf - Read Variable - Complex Double.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Read Variable - Complex Double.vi"/>
+			<Item Name="Pipe Var Intf - Read Data ACK.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Read Data ACK.vi"/>
+			<Item Name="Pipe Var Intf - Read Variable Data.vi" Type="VI" URL="../Private/Pipe Variable Interface/Pipe Var Intf - Read Variable Data.vi"/>
 		</Item>
 		<Item Name="Set Variable - auxiliary" Type="Folder">
 			<Item Name="Set Matrix - file.vi" Type="VI" URL="../Private/Set Variable - auxiliary/Set Matrix - file.vi"/>
@@ -107,6 +111,7 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Struct Data Types.ctl" Type="VI" URL="../Private/Type Definitions/Struct Data Types.ctl"/>
 			<Item Name="Struct Item Record.ctl" Type="VI" URL="../Private/Type Definitions/Struct Item Record.ctl"/>
 			<Item Name="Struct Item Types.ctl" Type="VI" URL="../Private/Type Definitions/Struct Item Types.ctl"/>
+			<Item Name="Transfer Mode.ctl" Type="VI" URL="../Private/Type Definitions/Transfer Mode.ctl"/>
 		</Item>
 		<Item Name="Utilities" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
@@ -125,6 +130,7 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Find Octave Executable Future Versions.vi" Type="VI" URL="../Private/Utilities/Find Octave Executable Future Versions.vi"/>
 			<Item Name="Get Time Delta.vi" Type="VI" URL="../Private/Utilities/Get Time Delta.vi"/>
 			<Item Name="Variant To Byte Stream.vi" Type="VI" URL="../Private/Utilities/Variant To Byte Stream.vi"/>
+			<Item Name="Get Transfer Mode.vi" Type="VI" URL="../Private/Utilities/Get Transfer Mode.vi"/>
 		</Item>
 		<Item Name="WinAPI32" Type="Folder">
 			<Item Name="demo" Type="Folder">
@@ -136,7 +142,6 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 				<Item Name="wa32 ReadFile with Timeout.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 ReadFile with Timeout.vi"/>
 				<Item Name="wa32 WriteFile with Timeout.vi" Type="VI" URL="../Private/WinAPI32/high level/wa32 WriteFile with Timeout.vi"/>
 			</Item>
-			<Item Name="read_me.txt" Type="Document" URL="../Private/WinAPI32/read_me.txt"/>
 			<Item Name="wa32 CloseHandle.vi" Type="VI" URL="../Private/WinAPI32/wa32 CloseHandle.vi"/>
 			<Item Name="wa32 ConnectNamedPipe.vi" Type="VI" URL="../Private/WinAPI32/wa32 ConnectNamedPipe.vi"/>
 			<Item Name="wa32 CreateFileA.vi" Type="VI" URL="../Private/WinAPI32/wa32 CreateFileA.vi"/>
@@ -172,6 +177,7 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 		</Item>
 		<Item Name="Utility" Type="Folder">
 			<Item Name="Set Bitstream Mode.vi" Type="VI" URL="../Public/Utility/Set Bitstream Mode.vi"/>
+			<Item Name="Set Pipe Mode.vi" Type="VI" URL="../Public/Utility/Set Pipe Mode.vi"/>
 			<Item Name="Set Struct Transfer Mode.vi" Type="VI" URL="../Public/Utility/Set Struct Transfer Mode.vi"/>
 			<Item Name="Check Output For Octave Errors.vi" Type="VI" URL="../Public/Utility/Check Output For Octave Errors.vi"/>
 			<Item Name="Check Status.vi" Type="VI" URL="../Public/Utility/Check Status.vi"/>
