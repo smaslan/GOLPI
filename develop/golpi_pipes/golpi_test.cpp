@@ -26,21 +26,24 @@
 // send variable 
 DEFUN_DLD(golpi_test, args, nargout, "Transfer variable from Octave using named pipe")
 {
-    octave_value_list res;    
+    octave_value_list res;
+            
         
     // identify data type
     auto var = args(0);
+        
+    // identify data type
     std::string errstr;
     DWORD var_type = VTYPE_ERROR;
-    if(var.iscell())
+    if(var.class_name().compare("cell") == 0) /* note: workaround for old Octave 4.xx which has no iscell() method wtf??? */
         errstr = "GOLPI pipe interface: Cell variables not supported.";
     else if(var.ndims() > 2)
         errstr = "GOLPI pipe interface: Variable must have max 2 dims.";
-    else if(!var.isnumeric() && !var.is_string())
+    else if(!var.is_matrix_type() && !var.is_scalar_type() && !var.is_string())
         errstr = "GOLPI pipe interface: Variable must be numeric type or string.";
     else if(var.is_string())
         var_type = VTYPE_STRING;    
-    else if(var.iscomplex())
+    else if(var.is_complex_matrix() || var.is_complex_scalar())
     {
         if(var.is_double_type())
             var_type = VTYPE_CDBL;
@@ -57,29 +60,18 @@ DEFUN_DLD(golpi_test, args, nargout, "Transfer variable from Octave using named 
         var_type = VTYPE_INT32;
     else if(var.is_uint32_type())
         var_type = VTYPE_UINT32;
+    else if(var.is_int16_type())
+        var_type = VTYPE_INT16;
+    else if(var.is_uint16_type())
+        var_type = VTYPE_UINT16;
+    else if(var.is_int8_type())
+        var_type = VTYPE_INT8;
+    else if(var.is_uint8_type())
+        var_type = VTYPE_UINT8;
     else
         errstr = "GOLPI pipe interface: unsupported variable type.";
-        
-    // data element size
-    DWORD element_size;
-    switch(var_type)
-    {
-        case VTYPE_STRING: element_size = 1; break;
-        case VTYPE_INT8: element_size = 1; break;
-        case VTYPE_UINT8: element_size = 1; break;
-        case VTYPE_INT16: element_size = sizeof(WORD); break;
-        case VTYPE_UINT16: element_size = sizeof(WORD); break;
-        case VTYPE_INT32: element_size = sizeof(DWORD); break;
-        case VTYPE_UINT32: element_size = sizeof(DWORD); break;
-        case VTYPE_DBL: element_size = sizeof(double); break;
-        case VTYPE_CDBL: element_size = 2*sizeof(double); break;
-        case VTYPE_SGL: element_size = sizeof(float); break;
-        case VTYPE_CSGL: element_size = 2*sizeof(float); break;
-        default: element_size = 0;
-    }
     
-    
-    octave_stdout << "type = " << var_type << ", byte_size = "<< var.byte_size() << ", value=" << ((float*)var.mex_get_data())[1] <<"\n";
+    octave_stdout << "type = " << var_type << ", errstr=" << errstr << "\n"; 
     
     return res;    
 }

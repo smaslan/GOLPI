@@ -131,9 +131,9 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
             // empty string
             res(0) = charMatrix("");
         }
-        else if(m == 1 && n)
+        else
         {    
-            // horizontal 1D string
+            // string
             
             // try read data
             charMatrix str = charMatrix(m,n);
@@ -145,19 +145,14 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
             }
             res(0) = str;
         }
-        else
-        {
-            SendACK(hPipe, false);            
-            CloseHandle(hPipe);
-            error("GOLPI pipe interface: String can be only 1D horizontal.");
-        }           
+        
     }
     else if(var_type == VTYPE_INT32)
     {
         // int32 matrix
         
         // try read data
-        int32NDArray array = int32NDArray({m,n});
+        int32NDArray array = int32NDArray({(int)m,(int)n});
         if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
         {
             SendACK(hPipe, false);
@@ -171,7 +166,7 @@ DEFUN_DLD(golpi_pipe_receive, args, nargout, "Transfer variable to Octave using 
         // uint32 matrix
         
         // try read data
-        uint32NDArray array = uint32NDArray({m,n});
+        uint32NDArray array = uint32NDArray({(int)m,(int)n});
         if(ReadFileTimeout(hPipe, (void*)array.fortran_vec(), data_size_bytes, &read, timeout))
         {
             SendACK(hPipe, false);

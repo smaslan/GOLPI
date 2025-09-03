@@ -62,15 +62,15 @@ DEFUN_DLD(golpi_pipe_send, args, nargout, "Transfer variable from Octave using n
     auto var = args(1);
     std::string errstr;
     DWORD var_type = VTYPE_ERROR;
-    if(var.iscell())
+    if(var.class_name().compare("cell") == 0) /* note: workaround for old Octave 4.xx which has no iscell() method wtf??? */
         errstr = "GOLPI pipe interface: Cell variables not supported.";
     else if(var.ndims() > 2)
         errstr = "GOLPI pipe interface: Variable must have max 2 dims.";
-    else if(!var.isnumeric() && !var.is_string())
+    else if(!var.is_matrix_type() && !var.is_scalar_type() && !var.is_string())
         errstr = "GOLPI pipe interface: Variable must be numeric type or string.";
     else if(var.is_string())
         var_type = VTYPE_STRING;    
-    else if(var.iscomplex())
+    else if(var.is_complex_matrix() || var.is_complex_scalar())
     {
         if(var.is_double_type())
             var_type = VTYPE_CDBL;
@@ -188,7 +188,14 @@ DEFUN_DLD(golpi_pipe_send, args, nargout, "Transfer variable from Octave using n
     
     if(!is_empty)
     {    
-        if(WriteFileTimeoutACK(hPipe, var.mex_get_data(), data_size_bytes, &written, write_block, timeout))
+        DWORD err;
+        if(var_type == VTYPE_CDBL)
+            err = WriteFileTimeoutACK(hPipe, (void*)var.complex_matrix_value().fortran_vec(), data_size_bytes, &written, write_block, timeout);
+        else if(var_type == VTYPE_CSGL)
+            err = WriteFileTimeoutACK(hPipe, (void*)var.float_complex_matrix_value().fortran_vec(), data_size_bytes, &written, write_block, timeout);
+        else
+            err = WriteFileTimeoutACK(hPipe, (void*)var.mex_get_data(), data_size_bytes, &written, write_block, timeout);
+        if(err)
         {
             // timeout - error
             CloseHandle(hPipe);
