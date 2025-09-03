@@ -21,17 +21,20 @@ outputs, repeat as you like, when you finished you quit it.
 ## Features:
 
 - Pipes (stdin and stdout) are used for communication to and from GNU Octave.
-- Polymorphic VI for reading a value of a variable (by means of stdout or temporary file for large amount of data).
-- Polymorphic VI for seting a value to a variable (by means of stdout or temporary file for large amount of data).
+- Polymorphic VI for reading a value of a variable.
+- Polymorphic VI for seting a value to a variable.
 - Reading and setting works also for structures (GNU Octave) from/to clusters (LabVIEW) (requires golpi package for GNU Octave).
 - Can check if GNU Octave is still running.
 - Debug mode can store all communication going through pipes.
 - Debug console can be shown to view ongoing communication.
 - 4 examples included.
 - Tested on several versions of GNU Octave in Windows.
-- 3 different methods to transfer data form/to GNU Octave: normal method use using stdin/stdout,
-  temporary file method use file with mat4 format, bitstream method using optimized stdin/stdout. For
-  comparisons see examples.
+- 4 different methods to transfer data form/to GNU Octave: 
+  - normal method use using stdin/stdout,
+  - temporary file method use file with mat4 format
+  - bitstream method using optimized stdin/stdout,
+  - pipe mode transfers variable using dedicated pipes directly.
+  - For comparisons see examples.
 - From version 0.7, GOLPI can also communicate with Matlab (based on popular request of our partners)
 
 ## Four components:
@@ -61,10 +64,12 @@ LabVIEW library. GOLPI use LV Process and `lv_process.dll` to start/quit GNU Oct
 receive data to/from it and send commands.
 
 ### 4, golpi
-GNU Octave package. It contains two functions:
+GNU Octave package. It contains public functions:
 
-- `golpi_data2bits` - used for Bitstream transfer mode in GOLPI.
-- `golpi_conv_struct` - used for structure to cluster transfer in GOLPI.
+- `golpi_data2bits.m` - used for Bitstream transfer mode in GOLPI.
+- `golpi_conv_struct.m` - used for structure to cluster transfer in GOLPI.
+- `golpi_pipe_send.cpp` - used to get variable from Octave via named pipe
+- `golpi_pipe_receive.cpp` - used to set variable to Octave via named pipe
 
 
 ## GOLPI Examples 
