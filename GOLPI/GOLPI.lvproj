@@ -18,6 +18,7 @@
 		<Item Name="GOLPI library.lvlib" Type="Library" URL="../GOLPI library.lvlib"/>
 		<Item Name="COPYING" Type="Document" URL="../COPYING"/>
 		<Item Name="COPYING.LESSER" Type="Document" URL="../COPYING.LESSER"/>
+		<Item Name="golpi-1.2.1.tar.gz" Type="Document" URL="../Octave package/golpi-1.2.1.tar.gz"/>
 		<Item Name="golpi-1.3.0.tar.gz" Type="Document" URL="../Octave package/golpi-1.3.0.tar.gz"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
@@ -94,7 +95,7 @@
 				<Property Name="Destination[1].path" Type="Path">../builds/GOLPI [VersionNumber] packed library LV 20.0 32 bit</Property>
 				<Property Name="DestinationCount" Type="Int">2</Property>
 				<Property Name="PackedLib_callersAdapt" Type="Bool">true</Property>
-				<Property Name="Source[0].itemID" Type="Str">{C689093E-0B2F-4CC0-916E-CFD8A90A1C97}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{A9544100-CD16-47F2-974A-85689B33922A}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].itemID" Type="Ref">/My Computer/GOLPI library.lvlib</Property>
@@ -116,7 +117,10 @@
 				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[5].itemID" Type="Ref">/My Computer/golpi-1.3.0.tar.gz</Property>
 				<Property Name="Source[5].sourceInclusion" Type="Str">Include</Property>
-				<Property Name="SourceCount" Type="Int">6</Property>
+				<Property Name="Source[6].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[6].itemID" Type="Ref">/My Computer/golpi-1.2.1.tar.gz</Property>
+				<Property Name="Source[6].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="SourceCount" Type="Int">7</Property>
 				<Property Name="TgtF_companyName" Type="Str">CMI</Property>
 				<Property Name="TgtF_enableDebugging" Type="Bool">true</Property>
 				<Property Name="TgtF_fileDescription" Type="Str">GNU Octave to Labview Pipes Interface</Property>
@@ -152,7 +156,7 @@
 				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
 				<Property Name="Destination[1].path" Type="Path">../builds/GOLPI [VersionNumber] source distribution LV 20.0 32 bit/data</Property>
 				<Property Name="DestinationCount" Type="Int">2</Property>
-				<Property Name="Source[0].itemID" Type="Str">{C689093E-0B2F-4CC0-916E-CFD8A90A1C97}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{A9544100-CD16-47F2-974A-85689B33922A}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].itemID" Type="Ref">/My Computer/GOLPI library.lvlib</Property>
@@ -170,7 +174,10 @@
 				<Property Name="Source[4].sourceInclusion" Type="Str">Include</Property>
 				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[5].itemID" Type="Ref">/My Computer/LV Process library.lvlib/lv_proc.dll</Property>
-				<Property Name="SourceCount" Type="Int">6</Property>
+				<Property Name="Source[6].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[6].itemID" Type="Ref">/My Computer/golpi-1.2.1.tar.gz</Property>
+				<Property Name="Source[6].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="SourceCount" Type="Int">7</Property>
 			</Item>
 			<Item Name="GOLPI Variable Pipe Interface Tester" Type="EXE">
 				<Property Name="App_copyErrors" Type="Bool">true</Property>
