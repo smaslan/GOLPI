@@ -20,6 +20,7 @@
 		<Item Name="COPYING.LESSER" Type="Document" URL="../COPYING.LESSER"/>
 		<Item Name="golpi-1.2.1.tar.gz" Type="Document" URL="../Octave package/golpi-1.2.1.tar.gz"/>
 		<Item Name="golpi-1.3.0.tar.gz" Type="Document" URL="../Octave package/golpi-1.3.0.tar.gz"/>
+		<Item Name="GOLPI package Feature.ctl" Type="VI" URL="../Private/Type Definitions/GOLPI package Feature.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>

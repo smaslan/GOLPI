@@ -132,6 +132,9 @@ GOLPI works only with lv_proc.dll library, which is part of vipm package or shou
 			<Item Name="Variant To Byte Stream.vi" Type="VI" URL="../Private/Utilities/Variant To Byte Stream.vi"/>
 			<Item Name="Get Transfer Mode.vi" Type="VI" URL="../Private/Utilities/Get Transfer Mode.vi"/>
 			<Item Name="Identify Octave Version From Path.vi" Type="VI" URL="../Private/Utilities/Identify Octave Version From Path.vi"/>
+			<Item Name="Install Octave Package golpi GUI.vi" Type="VI" URL="../Private/Utilities/Install Octave Package golpi GUI.vi"/>
+			<Item Name="GUI Panel Control Action.ctl" Type="VI" URL="../Private/Utilities/GUI Panel Control Action.ctl"/>
+			<Item Name="GUI Panel Control.vi" Type="VI" URL="../Private/Utilities/GUI Panel Control.vi"/>
 		</Item>
 		<Item Name="WinAPI32" Type="Folder">
 			<Item Name="demo" Type="Folder">
